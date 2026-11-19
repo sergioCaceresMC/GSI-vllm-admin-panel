@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import urllib.error
@@ -33,9 +34,12 @@ def systemctl(*args):
 
 def health_ready():
     try:
-        with urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2) as response:
+        port = int(os.environ.get("VLLM_PORT", "8000"))
+        if not 1 <= port <= 65535:
+            return False
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as response:
             return response.status == 200
-    except (urllib.error.URLError, TimeoutError, OSError):
+    except (ValueError, OSError):
         return False
 
 

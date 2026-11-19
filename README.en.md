@@ -17,6 +17,7 @@ A FastAPI dashboard for administering a vLLM inference server on Linux. Use it t
   - [Install the vLLM engine](#install-the-vllm-engine)
   - [systemd units](#systemd-units)
   - [Service control and write permissions](#service-control-and-write-permissions)
+  - [Change the inference port](#change-the-inference-port)
   - [Start and verify](#start-and-verify)
 - [Verify](#verify)
 
@@ -167,6 +168,7 @@ After=network.target
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/vllm-admin/vllm.env
 User=vllm-engine
 Group=vllm-engine
 SupplementaryGroups=vllm-config
@@ -189,6 +191,7 @@ After=network.target
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/vllm-admin/vllm.env
 User=vllm-admin
 Group=vllm-admin
 SupplementaryGroups=vllm-config
@@ -215,6 +218,33 @@ To enable **Guardar** (Save), install a trusted helper at `/usr/local/sbin/vllm-
 ```sudoers
 vllm-admin ALL=(root) NOPASSWD: /usr/local/sbin/vllm-save-config ""
 ```
+
+### Change the inference port
+
+If port `8000` is in use, choose a free port such as `8001`. Set `VLLM_PORT` in a file read by both the engine and the dashboard so the health check uses the same port.
+
+Create `/etc/vllm-admin/vllm.env` with this line:
+
+```ini
+VLLM_PORT=8001
+```
+
+If your installed units lack `EnvironmentFile`, run `sudo systemctl edit vllm.service` and `sudo systemctl edit vllm-admin.service`. Add this block to each unit:
+
+```ini
+[Service]
+EnvironmentFile=-/etc/vllm-admin/vllm.env
+```
+
+Apply the changes. Restarting the engine interrupts inference while the model reloads.
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl restart vllm.service vllm-admin.service
+curl -f http://127.0.0.1:8001/health
+```
+
+Use the new port in client base URLs (for example, `http://SERVER_IP:8001/v1`) and in the API firewall rule if you allow office access. The dashboard still uses port `8080`. If you run the dashboard without systemd, set `VLLM_PORT=8001` when starting Uvicorn.
 
 ### Start and verify
 

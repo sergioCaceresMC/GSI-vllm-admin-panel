@@ -17,6 +17,7 @@ Panel web FastAPI para administrar un servidor de inferencia vLLM en Linux. Perm
   - [Instalación del motor vLLM](#instalación-del-motor-vllm)
   - [Unidades de systemd](#unidades-de-systemd)
   - [Permisos de operación y escritura](#permisos-de-operación-y-escritura)
+  - [Cambiar el puerto de inferencia](#cambiar-el-puerto-de-inferencia)
   - [Arranque y verificación](#arranque-y-verificación)
 - [Verificar](#verificar)
 
@@ -167,6 +168,7 @@ After=network.target
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/vllm-admin/vllm.env
 User=vllm-engine
 Group=vllm-engine
 SupplementaryGroups=vllm-config
@@ -189,6 +191,7 @@ After=network.target
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/vllm-admin/vllm.env
 User=vllm-admin
 Group=vllm-admin
 SupplementaryGroups=vllm-config
@@ -215,6 +218,33 @@ Para habilitar **Guardar**, instala un helper de confianza en `/usr/local/sbin/v
 ```sudoers
 vllm-admin ALL=(root) NOPASSWD: /usr/local/sbin/vllm-save-config ""
 ```
+
+### Cambiar el puerto de inferencia
+
+Si el puerto `8000` está ocupado, elige uno libre, por ejemplo `8001`. Define `VLLM_PORT` en un archivo que lean tanto el motor como el panel para que la comprobación de salud use el mismo puerto.
+
+Crea `/etc/vllm-admin/vllm.env` con esta línea:
+
+```ini
+VLLM_PORT=8001
+```
+
+Si ya tienes unidades instaladas que no incluyen `EnvironmentFile`, ejecuta `sudo systemctl edit vllm.service` y `sudo systemctl edit vllm-admin.service`. Añade este bloque a cada unidad:
+
+```ini
+[Service]
+EnvironmentFile=-/etc/vllm-admin/vllm.env
+```
+
+Aplica los cambios. Reiniciar el motor interrumpe la inferencia mientras se vuelve a cargar el modelo.
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl restart vllm.service vllm-admin.service
+curl -f http://127.0.0.1:8001/health
+```
+
+Usa el nuevo puerto en la URL base de los clientes (por ejemplo, `http://IP_DEL_SERVIDOR:8001/v1`) y en la regla de firewall de la API si das acceso desde la oficina. El panel sigue en el puerto `8080`. Si ejecutas el panel sin systemd, pásale también `VLLM_PORT=8001` al iniciar Uvicorn.
 
 ### Arranque y verificación
 

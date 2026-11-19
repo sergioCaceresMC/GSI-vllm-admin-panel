@@ -1,5 +1,8 @@
 import json
+import os
+import runpy
 import unittest
+from pathlib import Path
 from subprocess import CompletedProcess
 from unittest.mock import patch
 
@@ -16,6 +19,41 @@ CONFIG = {
     "max_model_len": 2048,
     "max_num_seqs": 2,
 }
+
+
+class InferencePortTests(unittest.TestCase):
+    def test_launcher_and_probe_use_the_same_port(self):
+        launcher = runpy.run_path(str(Path(__file__).resolve().parents[1] / "start-vllm.py"))["main"]
+        for environment, expected_port in (({}, "8000"), ({"VLLM_PORT": "8001"}, "8001")):
+            with self.subTest(port=expected_port):
+                with (
+                    patch.dict(os.environ, environment, clear=True),
+                    patch("shutil.which", return_value="/example/vllm"),
+                    patch.object(Path, "read_text", return_value=json.dumps(CONFIG)),
+                    patch("os.execv") as execute,
+                    patch.object(adapters.urllib.request, "urlopen") as urlopen,
+                ):
+                    launcher()
+                    urlopen.return_value.__enter__.return_value.status = 200
+                    self.assertTrue(adapters.health_ready())
+                args = execute.call_args.args[1]
+                self.assertEqual(args[args.index("--port") + 1], expected_port)
+                urlopen.assert_called_once_with(f"http://127.0.0.1:{expected_port}/health", timeout=2)
+
+    def test_invalid_ports_are_rejected(self):
+        launcher = runpy.run_path(str(Path(__file__).resolve().parents[1] / "start-vllm.py"))["main"]
+        for port in ("invalid", "0", "65536"):
+            with self.subTest(port=port):
+                with (
+                    patch.dict(os.environ, {"VLLM_PORT": port}),
+                    patch("os.execv") as execute,
+                    patch.object(adapters.urllib.request, "urlopen") as urlopen,
+                ):
+                    with self.assertRaisesRegex(SystemExit, "VLLM_PORT"):
+                        launcher()
+                    self.assertFalse(adapters.health_ready())
+                execute.assert_not_called()
+                urlopen.assert_not_called()
 
 
 class DashboardTests(unittest.IsolatedAsyncioTestCase):
