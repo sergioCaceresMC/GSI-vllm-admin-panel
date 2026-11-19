@@ -23,6 +23,9 @@ def main():
         raise SystemExit("vLLM executable not found. Set VLLM_BIN or add vllm to PATH.")
 
     config = json.loads(Path(CONFIG_PATH).read_text())
+    tool_call_parser = os.environ.get("VLLM_TOOL_CALL_PARSER")
+    if tool_call_parser is None and config["model"] == "Qwen/Qwen3-1.7B":
+        tool_call_parser = "hermes"
 
     args = [
         executable,
@@ -46,6 +49,9 @@ def main():
 
         "--enforce-eager",
     ]
+
+    if tool_call_parser:
+        args.extend(["--enable-auto-tool-choice", "--tool-call-parser", tool_call_parser])
 
     os.execv(executable, args)
 
