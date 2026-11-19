@@ -1,0 +1,330 @@
+:root {
+  --color-background: #09090b;
+  --color-panel: #121214;
+  --color-field: #0c0c0e;
+  --color-control: #202024;
+  --color-control-hover: #2c2c31;
+  --color-line: #2a2a2e;
+  --color-control-border: #65656e;
+  --color-text: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-accent: #f4f4f5;
+  --color-accent-hover: #dcdce0;
+  --color-focus: #a1a1aa;
+  --color-on-accent: #18181b;
+  --color-ready: #86d9ad;
+  --color-starting: #e8c481;
+  --color-error: #f2a3a3;
+  --radius-panel: 0.625rem;
+  --radius-control: 0.375rem;
+  --radius-detail: 0.25rem;
+  --gsi-color: #26abe9;
+
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-areas:
+    "header header"
+    "service service"
+    "config metrics";
+  align-items: start;
+  gap: 1.25rem;
+  max-width: 68rem;
+  margin-inline: auto;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+.dashboard-header {
+  grid-area: header;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding-block-end: 1.125rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+h1,
+h2,
+p,
+dl,
+dd {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.gsi-title {
+  color: var(--gsi-color);
+}
+
+.panel {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.service {
+  grid-area: service;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding-block: 0.75rem;
+  background: var(--color-background);
+}
+
+.service-actions,
+.config-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.autostart {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.autostart input {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 2.125rem;
+  height: 1.125rem;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-detail);
+  background: var(--color-control);
+  cursor: inherit;
+}
+
+.autostart input::before {
+  content: "";
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: var(--color-muted);
+}
+
+.autostart input:checked {
+  justify-content: flex-end;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.autostart input:checked::before {
+  background: var(--color-on-accent);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  gap: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-detail);
+  background: var(--color-panel);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.status::before {
+  content: "";
+  flex: 0 0 0.3rem;
+  height: 2.1rem;
+  background: currentColor;
+}
+
+.status[data-state="ready"] { color: var(--color-ready); }
+.status[data-state="starting"] { color: var(--color-starting); }
+.status[data-state="error"] { color: var(--color-error); }
+
+.metrics {
+  grid-area: metrics;
+}
+
+.metric-list {
+  margin-block-start: 1rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.metric-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-block: 0.65rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.metric-list > div:last-child {
+  border-bottom: 0;
+  padding-block-end: 0;
+}
+
+dt,
+.config-fields label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+dd {
+  text-align: end;
+  font-family: ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.configuration {
+  grid-area: config;
+}
+
+.config-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem 1rem;
+  margin-block: 1rem 1.25rem;
+  padding-block-start: 1.125rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.config-fields label {
+  display: grid;
+  align-content: start;
+  gap: 0.375rem;
+}
+
+.model-field {
+  grid-column: 1 / -1;
+}
+
+.config-fields input,
+button {
+  min-height: 2.75rem;
+  border: 0px solid var(--color-control-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.config-fields input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-field);
+  font-size: 1rem;
+}
+
+button {
+  padding: 0.5rem 0.875rem;
+  background: var(--color-panel);
+  font-size: 0.875rem;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.service-actions button {
+  background: var(--color-control);
+}
+
+button:hover,
+.service-actions button:hover {
+  background: var(--color-control-hover);
+}
+
+button.primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+button.primary:hover {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.config-actions {
+  justify-content: flex-end;
+  padding-block-start: 1rem;
+  border-top: 1px solid var(--color-line);
+}
+
+#config-message:not(:empty) {
+  margin-block-start: 0.875rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 48rem) {
+  .dashboard {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "header" "service" "metrics" "config";
+  }
+}
+
+@media (max-width: 30rem) {
+  .dashboard-header,
+  .service {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .service-actions > button {
+    flex: 1 1 auto;
+  }
+
+  .config-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .config-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+}

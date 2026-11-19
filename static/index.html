@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>vLLM Admin</title>
+    <link rel="stylesheet" href="/static/dashboard.css" />
+  </head>
+  <body>
+    <main class="dashboard">
+      <header class="dashboard-header">
+        <h1>
+          <span class="gsi-title">GSI</span>
+          <span style="color: #ff8800">v</span>LLM Admin
+        </h1>
+        <p id="status" class="status" role="status">Consultando…</p>
+      </header>
+
+      <section class="panel service" aria-label="Controles del servidor">
+        <div class="service-actions">
+          <button type="button" data-service-action="start">Iniciar</button>
+          <button type="button" data-service-action="stop">Detener</button>
+          <button type="button" data-service-action="restart">Reiniciar</button>
+        </div>
+        <label class="autostart">
+          <input type="checkbox" role="switch" id="autostart" />
+          Inicio automático
+        </label>
+      </section>
+
+      <section class="panel metrics" aria-labelledby="metrics-heading">
+        <h2 id="metrics-heading">Monitorización</h2>
+        <dl class="metric-list">
+          <div>
+            <dt>CPU</dt>
+            <dd><span id="cpu">—</span>%</dd>
+          </div>
+          <div>
+            <dt>RAM</dt>
+            <dd id="ram">—</dd>
+          </div>
+          <div>
+            <dt>GPU</dt>
+            <dd id="gpu-name">—</dd>
+          </div>
+          <div>
+            <dt>Utilización GPU</dt>
+            <dd><span id="gpu-util">—</span>%</dd>
+          </div>
+          <div>
+            <dt>VRAM</dt>
+            <dd id="vram">—</dd>
+          </div>
+          <div>
+            <dt>Temperatura</dt>
+            <dd><span id="gpu-temp">—</span> °C</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel configuration" aria-labelledby="config-heading">
+        <h2 id="config-heading">Configuración de vLLM</h2>
+
+        <div class="config-fields">
+          <label class="model-field" for="model">
+            Modelo
+            <input id="model" type="text" />
+          </label>
+          <label for="served_model_name">
+            Nombre API
+            <input id="served_model_name" type="text" />
+          </label>
+          <label for="gpu_memory_utilization">
+            Fracción de memoria GPU
+            <input
+              id="gpu_memory_utilization"
+              type="number"
+              min="0.1"
+              max="0.95"
+              step="0.05"
+            />
+          </label>
+          <label for="max_model_len">
+            Contexto máximo
+            <input id="max_model_len" type="number" min="256" max="8192" />
+          </label>
+          <label for="max_num_seqs">
+            Secuencias simultáneas
+            <input id="max_num_seqs" type="number" min="1" max="16" />
+          </label>
+        </div>
+
+        <div class="config-actions">
+          <button type="button" id="save-config">Guardar</button>
+          <button type="button" id="apply-config" class="primary">
+            Guardar y reiniciar
+          </button>
+        </div>
+        <p id="config-message" role="status"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/static/dashboard.js"></script>
+  </body>
+</html>
