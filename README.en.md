@@ -17,6 +17,7 @@ A FastAPI dashboard for administering a vLLM inference server on Linux. Use it t
   - [Install the vLLM engine](#install-the-vllm-engine)
   - [systemd units](#systemd-units)
   - [Service control and write permissions](#service-control-and-write-permissions)
+  - [Automatic tool calling](#automatic-tool-calling)
   - [Change the inference port](#change-the-inference-port)
   - [Start and verify](#start-and-verify)
 - [Verify](#verify)
@@ -224,6 +225,23 @@ The helper validates input and atomically replaces the file while preserving its
 ```sudoers
 vllm-admin ALL=(root) NOPASSWD: /usr/local/sbin/vllm-save-config ""
 ```
+
+### Automatic tool calling
+
+Under **Configuración de vLLM**, choose a mode for **Llamadas automáticas a herramientas**:
+
+- **Activadas** uses the parser entered in the dashboard. Use `hermes` for `Qwen/Qwen3-1.7B`. For the XML format used by `LiquidAI/LFM3-1.7B`, try `qwen3_coder` and verify a tool call with that model.
+- **Desactivadas** disables automatic tool choice even when systemd defines `VLLM_TOOL_CALL_PARSER`.
+- **Predeterminado del servidor** uses `VLLM_TOOL_CALL_PARSER` when it is set. Otherwise, the launcher enables `hermes` for `Qwen/Qwen3-1.7B`. Existing settings files use this mode.
+
+On an existing installation, first update the helper and dashboard from the repository directory:
+
+```bash
+sudo install -o root -g root -m 0755 scripts/vllm-save-config /usr/local/sbin/vllm-save-config
+sudo systemctl restart vllm-admin.service
+```
+
+Click **Guardar y reiniciar** to apply the mode in vLLM. To verify activation, ask the model to invoke a tool from a client that sends `tool_choice: "auto"`. In the API response, the call appears in `choices[0].message.tool_calls`.
 
 ### Change the inference port
 

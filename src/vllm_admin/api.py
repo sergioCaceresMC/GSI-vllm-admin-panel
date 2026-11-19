@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from . import application
 from .application import OperationFailed
@@ -26,6 +26,17 @@ class VLLMConfig(BaseModel):
     max_model_len: int = Field(ge=-1)
     max_num_seqs: int = Field(ge=1)
     auto_start: bool = False
+    enable_auto_tool_choice: bool | None = None
+    tool_call_parser: str | None = Field(
+        default=None, validate_default=True, pattern=r"^[A-Za-z0-9_]{1,64}$",
+    )
+
+    @field_validator("tool_call_parser")
+    @classmethod
+    def validate_tool_call_parser(cls, value: str | None, info: ValidationInfo) -> str | None:
+        if info.data.get("enable_auto_tool_choice") and not value:
+            raise ValueError("Selecciona un analizador para activar las llamadas a herramientas")
+        return value
 
     @field_validator("max_model_len")
     @classmethod
@@ -50,7 +61,7 @@ def get_config():
 
 @router.put("/config")
 def update_config(config: VLLMConfig):
-    application.save_config(config.model_dump_json())
+    application.save_config(config.model_dump_json(exclude_none=True))
     return {"message": "Configuración guardada", "restart_required": True}
 
 

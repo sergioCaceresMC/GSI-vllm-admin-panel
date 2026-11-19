@@ -5,6 +5,7 @@
 - `main.py` assembles FastAPI. In `src/vllm_admin/`, `api.py` defines HTTP routes, `application.py` handles operations, and `adapters.py` integrates with the host.
 - `static/` contains dashboard HTML, CSS, and JavaScript modules. Update it alongside any API response changes. Keep new dashboard text in Spanish to match the existing UI.
 - `start-vllm.py` reads `/etc/vllm-admin/settings.json` and launches vLLM from its separate environment.
+- `scripts/vllm-save-config` is the privileged configuration writer. Keep its accepted keys and validation aligned with `VLLMConfig` and preserve compatibility with settings files that predate new fields.
 - `src/vllm_admin/__init__.py` backs the packaged CLI, which currently prints a greeting. The dashboard entry point is `main:app`.
 
 ## Build and Run
@@ -23,6 +24,8 @@ Use four spaces in Python, `snake_case` for functions and fields, `PascalCase` f
 
 Run `uv run python -m unittest discover -s tests` for API tests. Tests mock host integrations. There is no coverage threshold. Run `uv run python -m py_compile main.py start-vllm.py` for syntax and `uv run python -c 'import main'` for imports. Open the dashboard and use `curl -i http://127.0.0.1:8080/api/metrics` to smoke-test a read-only endpoint. Verify service controls, configuration writes, and GPU metrics on a host configured as described in `README.md`. Use systemd for autostart status and the vLLM `/health` endpoint for model readiness.
 
+For tool-calling changes, verify the arguments produced by the launcher for legacy settings, explicit activation, and explicit deactivation. Verify that the API and save helper reject an enabled setting without a parser. On a configured host, test `tool_choice: "auto"` against the active model and check that a request intended to invoke a tool returns a structured `tool_calls` entry.
+
 ## Commits and Pull Requests
 
 Use short, imperative Conventional Commit subjects such as `fix(metrics): handle missing GPU data`. Group related changes in one commit. In pull requests, describe the behavior change and checks performed, link an issue when available, and include a screenshot for visible dashboard changes.
@@ -30,3 +33,5 @@ Use short, imperative Conventional Commit subjects such as `fix(metrics): handle
 ## Deployment Configuration
 
 Keep the unauthenticated dashboard bound to loopback. Preserve the restricted sudo commands and validated configuration helper documented in `README.md`. Keep credentials and host-specific configuration out of commits.
+
+When the settings schema changes, update the installed helper and restart `vllm-admin.service` before using the new fields. Changes to the tool-calling mode or parser take effect when `vllm.service` next starts. The explicit panel setting takes precedence over `VLLM_TOOL_CALL_PARSER`. The server default keeps the launcher's legacy behavior.

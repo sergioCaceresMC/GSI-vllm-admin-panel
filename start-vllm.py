@@ -23,9 +23,15 @@ def main():
         raise SystemExit("vLLM executable not found. Set VLLM_BIN or add vllm to PATH.")
 
     config = json.loads(Path(CONFIG_PATH).read_text())
-    tool_call_parser = os.environ.get("VLLM_TOOL_CALL_PARSER")
-    if tool_call_parser is None and config["model"] == "Qwen/Qwen3-1.7B":
-        tool_call_parser = "hermes"
+    tool_choice = config.get("enable_auto_tool_choice")
+    if tool_choice is None:
+        tool_call_parser = os.environ.get("VLLM_TOOL_CALL_PARSER")
+        if tool_call_parser is None and config["model"] == "Qwen/Qwen3-1.7B":
+            tool_call_parser = "hermes"
+    else:
+        tool_call_parser = config.get("tool_call_parser") if tool_choice else None
+        if tool_choice and not tool_call_parser:
+            raise SystemExit("tool_call_parser is required when enable_auto_tool_choice is true.")
 
     args = [
         executable,

@@ -11,7 +11,7 @@ from pathlib import Path
 
 CONFIG_PATH = Path("/etc/vllm-admin/settings.json")
 
-ALLOWED_KEYS = {
+REQUIRED_KEYS = {
     "model",
     "served_model_name",
     "gpu_memory_utilization",
@@ -19,13 +19,14 @@ ALLOWED_KEYS = {
     "max_num_seqs",
     "auto_start",
 }
+OPTIONAL_KEYS = {"enable_auto_tool_choice", "tool_call_parser"}
 
 
 def validate(config):
     if not isinstance(config, dict):
         raise ValueError("La configuración debe ser un objeto JSON")
 
-    if set(config) != ALLOWED_KEYS:
+    if not REQUIRED_KEYS <= config.keys() <= REQUIRED_KEYS | OPTIONAL_KEYS:
         raise ValueError("Claves de configuración incorrectas")
 
     model = config["model"]
@@ -65,6 +66,16 @@ def validate(config):
 
     if type(config["auto_start"]) is not bool:
         raise ValueError("auto_start debe ser booleano")
+
+    enabled = config.get("enable_auto_tool_choice")
+    if "enable_auto_tool_choice" in config and type(enabled) is not bool:
+        raise ValueError("La opción de llamadas a herramientas debe ser booleana")
+
+    parser = config.get("tool_call_parser")
+    if ("tool_call_parser" in config or enabled) and (
+        not isinstance(parser, str) or not re.fullmatch(r"[A-Za-z0-9_]{1,64}", parser)
+    ):
+        raise ValueError("Selecciona un analizador válido para las llamadas a herramientas")
 
 
 def main():

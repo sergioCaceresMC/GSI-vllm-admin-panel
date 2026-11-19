@@ -17,6 +17,7 @@ Panel web FastAPI para administrar un servidor de inferencia vLLM en Linux. Perm
   - [Instalación del motor vLLM](#instalación-del-motor-vllm)
   - [Unidades de systemd](#unidades-de-systemd)
   - [Permisos de operación y escritura](#permisos-de-operación-y-escritura)
+  - [Llamadas automáticas a herramientas](#llamadas-automáticas-a-herramientas)
   - [Cambiar el puerto de inferencia](#cambiar-el-puerto-de-inferencia)
   - [Arranque y verificación](#arranque-y-verificación)
 - [Verificar](#verificar)
@@ -224,6 +225,23 @@ El helper valida la entrada y reemplaza el archivo de forma atómica, conservand
 ```sudoers
 vllm-admin ALL=(root) NOPASSWD: /usr/local/sbin/vllm-save-config ""
 ```
+
+### Llamadas automáticas a herramientas
+
+En **Configuración de vLLM**, elige el modo de **Llamadas automáticas a herramientas**:
+
+- **Activadas** usa el analizador indicado en el panel. Para `Qwen/Qwen3-1.7B` usa `hermes`. Para el formato XML de `LiquidAI/LFM3-1.7B`, prueba `qwen3_coder` y verifica una llamada con ese modelo.
+- **Desactivadas** deshabilita la selección automática de herramientas, aunque systemd defina `VLLM_TOOL_CALL_PARSER`.
+- **Predeterminado del servidor** sigue usando `VLLM_TOOL_CALL_PARSER` si está definido. Si no lo está, el lanzador activa `hermes` para `Qwen/Qwen3-1.7B`. Los archivos de configuración antiguos usan este modo.
+
+En una instalación existente, actualiza primero el helper y el panel desde el directorio del repositorio:
+
+```bash
+sudo install -o root -g root -m 0755 scripts/vllm-save-config /usr/local/sbin/vllm-save-config
+sudo systemctl restart vllm-admin.service
+```
+
+Pulsa **Guardar y reiniciar** para aplicar el modo en vLLM. Para comprobar la activación, pide al modelo que invoque una herramienta desde un cliente que envíe `tool_choice: "auto"`. En la respuesta de la API, la llamada aparece en `choices[0].message.tool_calls`.
 
 ### Cambiar el puerto de inferencia
 

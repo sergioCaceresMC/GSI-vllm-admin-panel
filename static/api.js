@@ -9,6 +9,7 @@ const validationMessages = {
   gpu_memory_utilization: "Fracción de memoria GPU: introduce un número mayor que 0 y menor o igual a 1.",
   max_model_len: "Contexto máximo: introduce un entero positivo o -1 para el ajuste automático.",
   max_num_seqs: "Secuencias simultáneas: introduce un entero positivo.",
+  tool_call_parser: "Analizador de herramientas: introduce un nombre válido para el modelo.",
 };
 
 export async function requireOk(response, fallback) {

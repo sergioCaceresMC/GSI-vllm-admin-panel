@@ -239,6 +239,7 @@ dd {
 }
 
 .config-fields input,
+.config-fields select,
 button {
   min-height: 2.75rem;
   border: 0px solid var(--color-control-border);
@@ -247,7 +248,8 @@ button {
   font: inherit;
 }
 
-.config-fields input {
+.config-fields input,
+.config-fields select {
   width: 100%;
   min-width: 0;
   padding: 0.5rem 0.75rem;

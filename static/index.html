@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>vLLM Admin</title>
-    <link rel="stylesheet" href="/static/dashboard.css" />
+    <link rel="stylesheet" href="/static/dashboard.css?v=4" />
   </head>
   <body>
     <main class="dashboard">
@@ -87,6 +87,18 @@
             Secuencias simultáneas
             <input id="max_num_seqs" type="number" min="1" step="1" />
           </label>
+          <label for="enable_auto_tool_choice">
+            Llamadas automáticas a herramientas
+            <select id="enable_auto_tool_choice">
+              <option value="">Predeterminado del servidor</option>
+              <option value="true">Activadas</option>
+              <option value="false">Desactivadas</option>
+            </select>
+          </label>
+          <label for="tool_call_parser">
+            Analizador de herramientas
+            <input id="tool_call_parser" type="text" maxlength="64" placeholder="qwen3_coder" disabled />
+          </label>
         </div>
 
         <div class="config-actions">
@@ -99,6 +111,6 @@
       </section>
     </main>
 
-    <script type="module" src="/static/dashboard.js?v=3"></script>
+    <script type="module" src="/static/dashboard.js?v=4"></script>
   </body>
 </html>

@@ -7,7 +7,7 @@ import {
   putConfig,
   requireOk,
   serviceAction,
-} from "./api.js?v=3";
+} from "./api.js?v=4";
 
 async function updateStatus() {
   const status = document.getElementById("status");
@@ -96,6 +96,14 @@ async function updateMetrics() {
 }
 
 let currentConfig = null;
+const toolChoice = document.getElementById("enable_auto_tool_choice");
+const toolParser = document.getElementById("tool_call_parser");
+
+function updateToolParser() {
+  toolParser.disabled = toolChoice.value !== "true";
+}
+
+toolChoice.addEventListener("change", updateToolParser);
 
 async function loadConfig() {
   const response = await getConfig();
@@ -119,6 +127,9 @@ async function loadConfig() {
 
   document.getElementById("max_num_seqs").value =
     currentConfig.max_num_seqs;
+  toolChoice.value = String(currentConfig.enable_auto_tool_choice ?? "");
+  toolParser.value = currentConfig.tool_call_parser ?? "";
+  updateToolParser();
 }
 
 async function saveConfig() {
@@ -132,6 +143,8 @@ async function saveConfig() {
     gpu_memory_utilization: document.getElementById("gpu_memory_utilization").valueAsNumber,
     max_model_len: document.getElementById("max_model_len").valueAsNumber,
     max_num_seqs: document.getElementById("max_num_seqs").valueAsNumber,
+    enable_auto_tool_choice: toolChoice.value === "" ? null : toolChoice.value === "true",
+    tool_call_parser: toolChoice.value === "true" ? toolParser.value.trim() || null : null,
   };
 
   const response = await putConfig(config);

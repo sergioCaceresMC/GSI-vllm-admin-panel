@@ -56,6 +56,32 @@ class InferencePortTests(unittest.TestCase):
                 urlopen.assert_not_called()
 
 
+class ToolCallingTests(unittest.TestCase):
+    def test_launcher_honors_explicit_settings_and_legacy_defaults(self):
+        launcher = runpy.run_path(str(Path(__file__).resolve().parents[1] / "start-vllm.py"))["main"]
+        for options, env, expected in (
+            ({}, {}, "hermes"),
+            ({}, {"VLLM_TOOL_CALL_PARSER": "llama3_json"}, "llama3_json"),
+            ({"enable_auto_tool_choice": False}, {"VLLM_TOOL_CALL_PARSER": "hermes"}, None),
+            ({"enable_auto_tool_choice": True, "tool_call_parser": "qwen3_coder"}, {}, "qwen3_coder"),
+        ):
+            with self.subTest(options=options, env=env):
+                config = {**CONFIG, "model": "Qwen/Qwen3-1.7B", **options}
+                with (
+                    patch.dict(os.environ, env, clear=True),
+                    patch("shutil.which", return_value="/example/vllm"),
+                    patch.object(Path, "read_text", return_value=json.dumps(config)),
+                    patch("os.execv") as execute,
+                ):
+                    launcher()
+                args = execute.call_args.args[1]
+                if expected:
+                    self.assertEqual(args[-3:], ["--enable-auto-tool-choice", "--tool-call-parser", expected])
+                else:
+                    self.assertNotIn("--enable-auto-tool-choice", args)
+                    self.assertNotIn("--tool-call-parser", args)
+
+
 class DashboardTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.client = AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver")
@@ -130,6 +156,31 @@ class DashboardTests(unittest.IsolatedAsyncioTestCase):
             response = await self.client.put("/api/config", json=CONFIG)
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json(), {"detail": "denied"})
+
+    async def test_tool_calling_settings_are_saved_and_validated(self):
+        helper = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts/vllm-save-config"))
+        for options in (
+            {"enable_auto_tool_choice": False},
+            {"enable_auto_tool_choice": True, "tool_call_parser": "qwen3_coder"},
+        ):
+            with self.subTest(options=options):
+                with patch.object(adapters, "write_config", return_value=CompletedProcess([], 0)) as write:
+                    response = await self.client.put("/api/config", json={**CONFIG, **options})
+                self.assertEqual(response.status_code, 200)
+                saved = json.loads(write.call_args.args[0])
+                self.assertEqual(saved, {**CONFIG, "auto_start": False, **options})
+                helper["validate"](saved)
+
+        for options in (
+            {"enable_auto_tool_choice": True},
+            {"enable_auto_tool_choice": True, "tool_call_parser": "--invalid"},
+        ):
+            with self.subTest(options=options):
+                with patch.object(adapters, "write_config") as write:
+                    response = await self.client.put("/api/config", json={**CONFIG, **options})
+                self.assertEqual(response.status_code, 422)
+                self.assertEqual(response.json()["detail"][0]["loc"], ["body", "tool_call_parser"])
+                write.assert_not_called()
 
     async def test_service_controls(self):
         for command in ("start", "stop", "restart"):
