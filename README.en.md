@@ -213,7 +213,13 @@ vllm-admin ALL=(root) NOPASSWD: /usr/bin/systemctl is-active vllm.service, /usr/
 vllm-admin ALL=(root) NOPASSWD: /usr/bin/systemctl enable vllm.service, /usr/bin/systemctl disable vllm.service
 ```
 
-To enable **Guardar** (Save), install a trusted helper at `/usr/local/sbin/vllm-save-config`, owned and executable by root. The helper is provided separately. It must read JSON from standard input, validate the keys, types, and ranges defined in `src/vllm_admin/api.py`, and atomically replace the file from the same directory with owner `root:vllm-config` and mode `0640`. Invalid input must return an error and preserve the previous file. Add this rule after installation.
+To enable **Guardar** (Save), install the helper from the repository. Update it on existing installations so it accepts the same limits as the dashboard.
+
+```bash
+sudo install -o root -g root -m 0755 scripts/vllm-save-config /usr/local/sbin/vllm-save-config
+```
+
+The helper validates input and atomically replaces the file while preserving its owner, group, and permissions. If the file is missing, it uses `root:vllm-config` and mode `0640`. Context length accepts positive integers or `-1` for automatic sizing. vLLM checks whether the requested context and concurrency are viable at startup. Add this rule after installation.
 
 ```sudoers
 vllm-admin ALL=(root) NOPASSWD: /usr/local/sbin/vllm-save-config ""

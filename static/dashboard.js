@@ -5,8 +5,9 @@ import {
   getStatus,
   putAutoStart,
   putConfig,
+  requireOk,
   serviceAction,
-} from "./api.js";
+} from "./api.js?v=3";
 
 async function updateStatus() {
   const status = document.getElementById("status");
@@ -55,10 +56,7 @@ async function action(command) {
   try {
     const response = await serviceAction(command);
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error);
-    }
+    await requireOk(response, "No se pudo controlar el servicio");
 
     await updateStatus();
   } catch (error) {
@@ -131,21 +129,14 @@ async function saveConfig() {
 
     served_model_name: document.getElementById("served_model_name").value,
 
-    gpu_memory_utilization: Number(
-      document.getElementById("gpu_memory_utilization").value,
-    ),
-
-    max_model_len: Number(document.getElementById("max_model_len").value),
-
-    max_num_seqs: Number(document.getElementById("max_num_seqs").value),
+    gpu_memory_utilization: document.getElementById("gpu_memory_utilization").valueAsNumber,
+    max_model_len: document.getElementById("max_model_len").valueAsNumber,
+    max_num_seqs: document.getElementById("max_num_seqs").valueAsNumber,
   };
 
   const response = await putConfig(config);
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error);
-  }
+  await requireOk(response, "No se pudo guardar la configuración");
 
   currentConfig = config;
 
@@ -154,19 +145,20 @@ async function saveConfig() {
 }
 
 async function applyConfig() {
+  const message = document.getElementById("config-message");
   try {
     await saveConfig();
-
-    const response = await serviceAction("restart");
-
-    if (!response.ok) {
-      throw new Error(await response.text());
-    }
-
-    document.getElementById("config-message").textContent =
-      "Reinicio solicitado. Esperando a que el modelo esté disponible.";
   } catch (error) {
-    alert(error.message);
+    message.textContent = error.message;
+    return;
+  }
+
+  try {
+    const response = await serviceAction("restart");
+    await requireOk(response, "No se pudo reiniciar vLLM");
+    message.textContent = "Reinicio solicitado. Esperando a que el modelo esté disponible.";
+  } catch (error) {
+    message.textContent = `Configuración guardada. Error al reiniciar vLLM: ${error.message}`;
   }
 }
 
@@ -194,9 +186,7 @@ async function setAutoStart() {
   try {
     const response = await putAutoStart(enabled);
 
-    if (!response.ok) {
-      throw new Error(await response.text());
-    }
+    await requireOk(response, "No se pudo actualizar el inicio automático");
   } catch (error) {
     checkbox.checked = !enabled;
     alert("Error: " + error.message);

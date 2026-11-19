@@ -111,6 +111,20 @@ class DashboardTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 422)
         write.assert_not_called()
 
+    async def test_config_accepts_larger_and_automatic_context(self):
+        for context, gpu in ((32768, 1.0), (-1, 0.05)):
+            with self.subTest(context=context, gpu=gpu):
+                config = {
+                    **CONFIG,
+                    "max_model_len": context,
+                    "max_num_seqs": 32,
+                    "gpu_memory_utilization": gpu,
+                }
+                with patch.object(adapters, "write_config", return_value=CompletedProcess([], 0)) as write:
+                    response = await self.client.put("/api/config", json=config)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(json.loads(write.call_args.args[0]), {**config, "auto_start": False})
+
     async def test_failed_config_write(self):
         with patch.object(adapters, "write_config", return_value=CompletedProcess([], 1, "", " denied\n")):
             response = await self.client.put("/api/config", json=CONFIG)

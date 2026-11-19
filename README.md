@@ -213,7 +213,13 @@ vllm-admin ALL=(root) NOPASSWD: /usr/bin/systemctl is-active vllm.service, /usr/
 vllm-admin ALL=(root) NOPASSWD: /usr/bin/systemctl enable vllm.service, /usr/bin/systemctl disable vllm.service
 ```
 
-Para habilitar **Guardar**, instala un helper de confianza en `/usr/local/sbin/vllm-save-config`, propiedad de root y ejecutable por root. El helper se proporciona por separado. Debe leer el JSON de la entrada estándar, validar las claves, tipos y rangos definidos en `src/vllm_admin/api.py` y reemplazar atómicamente el archivo desde el mismo directorio con propietario `root:vllm-config` y modo `0640`. Una entrada inválida debe devolver un código de error y conservar el archivo anterior. Añade esta regla una vez instalado.
+Para habilitar **Guardar**, instala el helper del repositorio. Actualízalo también en instalaciones existentes para que el guardado use los mismos límites que el panel.
+
+```bash
+sudo install -o root -g root -m 0755 scripts/vllm-save-config /usr/local/sbin/vllm-save-config
+```
+
+El helper valida la entrada y reemplaza el archivo de forma atómica, conservando su propietario, grupo y permisos. Si el archivo aún no existe, usa `root:vllm-config` y modo `0640`. El contexto admite enteros positivos o `-1` para ajuste automático. vLLM comprueba si el contexto y la concurrencia solicitados son viables al iniciar. Añade esta regla una vez instalado.
 
 ```sudoers
 vllm-admin ALL=(root) NOPASSWD: /usr/local/sbin/vllm-save-config ""

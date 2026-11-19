@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+import grp
+import json
+import os
+import re
+import stat
+import sys
+import tempfile
+from pathlib import Path
+
+CONFIG_PATH = Path("/etc/vllm-admin/settings.json")
+
+ALLOWED_KEYS = {
+    "model",
+    "served_model_name",
+    "gpu_memory_utilization",
+    "max_model_len",
+    "max_num_seqs",
+    "auto_start",
+}
+
+
+def validate(config):
+    if not isinstance(config, dict):
+        raise ValueError("La configuración debe ser un objeto JSON")
+
+    if set(config) != ALLOWED_KEYS:
+        raise ValueError("Claves de configuración incorrectas")
+
+    model = config["model"]
+
+    if (
+        not isinstance(model, str)
+        or not 3 <= len(model) <= 200
+        or not re.fullmatch(
+            r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+",
+            model,
+        )
+    ):
+        raise ValueError("Identificador de modelo no válido")
+
+    name = config["served_model_name"]
+
+    if (
+        not isinstance(name, str)
+        or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", name)
+    ):
+        raise ValueError("Nombre de API no válido")
+
+    gpu = config["gpu_memory_utilization"]
+
+    if type(gpu) not in (int, float) or not 0 < gpu <= 1:
+        raise ValueError("La fracción de memoria GPU debe ser mayor que 0 y menor o igual a 1")
+
+    context = config["max_model_len"]
+
+    if type(context) is not int or (context < -1 or context == 0):
+        raise ValueError("Introduce un contexto positivo o -1 para el ajuste automático")
+
+    sequences = config["max_num_seqs"]
+
+    if type(sequences) is not int or sequences < 1:
+        raise ValueError("El número de secuencias simultáneas debe ser un entero positivo")
+
+    if type(config["auto_start"]) is not bool:
+        raise ValueError("auto_start debe ser booleano")
+
+
+def main():
+    config = json.load(sys.stdin)
+
+    validate(config)
+
+    try:
+        existing = CONFIG_PATH.stat()
+        owner, group, mode = existing.st_uid, existing.st_gid, stat.S_IMODE(existing.st_mode)
+    except FileNotFoundError:
+        owner, group, mode = 0, grp.getgrnam("vllm-config").gr_gid, 0o640
+
+    directory = CONFIG_PATH.parent
+
+    fd, temporary = tempfile.mkstemp(
+        dir=directory,
+        prefix=".settings-",
+    )
+
+    try:
+        with os.fdopen(fd, "w") as file:
+            json.dump(config, file, indent=2)
+            file.write("\n")
+            os.fchown(file.fileno(), owner, group)
+            os.fchmod(file.fileno(), mode)
+            file.flush()
+            os.fsync(file.fileno())
+
+        os.replace(temporary, CONFIG_PATH)
+
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(1)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from . import application
 from .application import OperationFailed
@@ -22,22 +22,17 @@ class VLLMConfig(BaseModel):
         pattern=r"^[A-Za-z0-9_.-]+$",
     )
 
-    gpu_memory_utilization: float = Field(
-        ge=0.1,
-        le=0.95,
-    )
-
-    max_model_len: int = Field(
-        ge=256,
-        le=8192,
-    )
-
-    max_num_seqs: int = Field(
-        ge=1,
-        le=16,
-    )
-
+    gpu_memory_utilization: float = Field(gt=0, le=1)
+    max_model_len: int = Field(ge=-1)
+    max_num_seqs: int = Field(ge=1)
     auto_start: bool = False
+
+    @field_validator("max_model_len")
+    @classmethod
+    def validate_max_model_len(cls, value: int) -> int:
+        if value == 0:
+            raise ValueError("Introduce un contexto positivo o -1 para el ajuste automático")
+        return value
 
 
 class AutoStartConfig(BaseModel):
